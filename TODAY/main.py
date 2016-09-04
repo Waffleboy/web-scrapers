@@ -31,9 +31,9 @@ CATEGORIES_TO_SCRAPE = {#'commentary'     :'http://www.todayonline.com/commentar
                           #'singapore'    :'http://www.todayonline.com/singapore',
                           #'daily focus'  :'http://www.todayonline.com/daily-focus',
                           #'china & india':'http://www.todayonline.com/chinaindia',
-                          'world'        :'http://www.todayonline.com/world',
+                          #'world'        :'http://www.todayonline.com/world',
                           #'business'     :'http://www.todayonline.com/business',
-                          #'tech'         :'http://www.todayonline.com/tech',
+                          'tech'         :'http://www.todayonline.com/tech',
                           #'sports'       :'http://www.todayonline.com/sports',
                           #'entertainment':'http://www.todayonline.com/entertainment',
                          # 'lifestyle'    :'http://www.todayonline.com/lifestyle',
@@ -311,8 +311,8 @@ def downloadAllArticles(articles,article_URLS,category,BREAK):
     
 def run():
     global DATE_FROM,DATE_END,BASE_LINK,CATEGORIES_TO_SCRAPE,PRINT_PAGE_NUM,RESUME_FROM_PREVIOUS,RESUME_CATEGORY
-    #initializeOrResume(RESUME_FROM_PREVIOUS)
-    OVERRIDE = True
+    initializeOrResume(RESUME_FROM_PREVIOUS)
+    OVERRIDE = False
     for category in CATEGORIES_TO_SCRAPE:
         print('Scraping category: ' + category)
         BREAK = False
