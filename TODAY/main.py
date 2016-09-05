@@ -4,11 +4,10 @@ Created on Thu Sep  1 22:47:51 2016
 
 @author: waffleboy
 """
-import datetime,os,shutil,time
+import datetime,os,time
 import single_link_scraper as backend
 import format_and_download as formatter
 import http
-import pandas as pd #ONLY IF RESUME IS NEEDED
 #==============================================================================
 #                               Settings
 #==============================================================================
@@ -18,32 +17,32 @@ BASE_FOLDER_NAME = 'Articles' #change if you want.
 PRINT_PAGE_NUM   = True # set to False if you dont want to see the current page the scraper is on.
 
 CURRENT_DATE = datetime.date.today()
-HTML_SAVE_FOLDER = BASE_FOLDER_NAME+'/'+ 'HTML_2016-09-03' #BASE_FOLDER_NAME +'/'+ 'HTML_'+str(CURRENT_DATE)
-CSV_NAME         = BASE_FOLDER_NAME + '/' + '2016-09-03.csv' #str(CURRENT_DATE) + '.csv'
+HTML_SAVE_FOLDER = BASE_FOLDER_NAME +'/'+ 'HTML_'+str(CURRENT_DATE)
+CSV_NAME         = BASE_FOLDER_NAME + '/' +  str(CURRENT_DATE) + '.csv'
 # Dont touch below if not resuming from existing session
 RESUME_FROM_PREVIOUS = False #Set to true if some error occured previously and run again
-RESUME_CATEGORY = '' # Last category that it was scraping. will delete and restart from there.
+RESUME_LINK = '' # Last page that scraper was on before connection issue. eg, 
+                # 'http://www.todayonline.com/commentary?page=120'
 
 # If you're resuming, comment out the categories that you've already downloaded.
 
-CATEGORIES_TO_SCRAPE = {#'commentary'     :'http://www.todayonline.com/commentary',
-                         # 'voices'       :'http://www.todayonline.com/voices',
-                          #'singapore'    :'http://www.todayonline.com/singapore',
-                          #'daily focus'  :'http://www.todayonline.com/daily-focus',
-                          #'china & india':'http://www.todayonline.com/chinaindia',
+CATEGORIES_TO_SCRAPE = {'commentary'     :'http://www.todayonline.com/commentary',
+                         'voices'       :'http://www.todayonline.com/voices',
+                         'singapore'    :'http://www.todayonline.com/singapore',
+                          'daily focus'  :'http://www.todayonline.com/daily-focus',
+                          'china & india':'http://www.todayonline.com/chinaindia',
                           'world'        :'http://www.todayonline.com/world',
-                          #'business'     :'http://www.todayonline.com/business',
-                          #'tech'         :'http://www.todayonline.com/tech',
-                          #'sports'       :'http://www.todayonline.com/sports',
-                          #'entertainment':'http://www.todayonline.com/entertainment',
-                         # 'lifestyle'    :'http://www.todayonline.com/lifestyle',
-                         # 'blogs'        :'http://www.todayonline.com/blogs'
+                          'business'     :'http://www.todayonline.com/business',
+                          'tech'         :'http://www.todayonline.com/tech',
+                          'sports'       :'http://www.todayonline.com/sports',
+                          'entertainment':'http://www.todayonline.com/entertainment',
+                         'lifestyle'    :'http://www.todayonline.com/lifestyle',
+                          'blogs'        :'http://www.todayonline.com/blogs'
                          }
                        
 ## DO NOT TOUCH THE FOLLOWING ##
 http.client._MAXHEADERS = 1000
 BASE_LINK = 'http://www.todayonline.com'
-LAST_URL = ''
 #==============================================================================
 def initialize():
     print('Creating folders..')
@@ -256,28 +255,28 @@ def shouldAccelerate(current_date):
 def randomDelay():
     time.sleep(1)
     return
-    
-# used for resume. delete last category and start from there.
-def deleteLastCategory(category_name):
-    global HTML_SAVE_FOLDER,CSV_NAME
-    try:
-        shutil.rmtree(HTML_SAVE_FOLDER+'/'+category_name)
-    except:
-        print('Could not delete last category for resume - is the name correct?')
-    
-    try:
-        df = pd.read_csv(CSV_NAME)
-        df2 = df[df['category'] == category_name]
-        df2.to_csv(CSV_NAME,index=False)
-    except:
-        print('Could not remove incomplete entries from category. Is the name correct and does the file exist?')
-    return
+#    
+## NOT IN USE
+#def deleteLastCategory(category_name):
+#    global HTML_SAVE_FOLDER,CSV_NAME
+#    try:
+#        shutil.rmtree(HTML_SAVE_FOLDER+'/'+category_name)
+#    except:
+#        print('Could not delete last category for resume - is the name correct?')
+#    
+#    try:
+#        df = pd.read_csv(CSV_NAME)
+#        df2 = df[df['category'] == category_name]
+#        df2.to_csv(CSV_NAME,index=False)
+#    except:
+#        print('Could not remove incomplete entries from category. Is the name correct and does the file exist?')
+#    return
 
 def initializeOrResume(RESUME_FROM_PREVIOUS):
     if not RESUME_FROM_PREVIOUS:    
         initialize() #prepare directory
     else:
-        deleteLastCategory(RESUME_CATEGORY)
+        return RESUME_FROM_PREVIOUS
     return
 
 def downloadAllArticlesOnPage(articles,article_URLS,category,BREAK):
@@ -309,47 +308,38 @@ def downloadAllArticles(articles,article_URLS,category,BREAK):
     return BREAK
     
 def run():
-    global DATE_FROM,DATE_END,BASE_LINK,CATEGORIES_TO_SCRAPE,PRINT_PAGE_NUM,RESUME_FROM_PREVIOUS,RESUME_CATEGORY
-    #initializeOrResume(RESUME_FROM_PREVIOUS)
-    lst=[]
-    OVERRIDE = True
+    global DATE_FROM,DATE_END,BASE_LINK,CATEGORIES_TO_SCRAPE,PRINT_PAGE_NUM,RESUME_FROM_PREVIOUS,RESUME_CATEGORY,RESUME_LINK
+    OVERRIDE = initializeOrResume(RESUME_FROM_PREVIOUS)
     for category in CATEGORIES_TO_SCRAPE:
         print('Scraping category: ' + category)
         BREAK = False
         if OVERRIDE:
-            nextPage_URL = 'http://www.todayonline.com/world?page=6150'
+            nextPage_URL = RESUME_LINK
             OVERRIDE = False
         else:
             category_URL = CATEGORIES_TO_SCRAPE[category]
             nextPage_URL = quickSearchStarting(category_URL)
             
         pageNum = getPageNumberFromURL(nextPage_URL)
-        try:
-            while (BREAK == False and nextPage_URL):
-                if PRINT_PAGE_NUM:
-                    print('Investigating and Scraping page '+ str(pageNum) + ' of category '+category + '...')
-                    
-                articles = getArticleDivsOnPage(nextPage_URL)
-                article_URLS = stripURLSFromAllArticles(BASE_LINK,articles)
+        while (BREAK == False and nextPage_URL):
+            if PRINT_PAGE_NUM:
+                print('Investigating and Scraping page '+ str(pageNum) + ' of category '+category + '...')
                 
-                for url in article_URLS: 
-                    #print(url)
-                    if not BREAK:
-                        if len(articles) == 0: #no articles found
-                            BREAK = True
-                            continue
-                        BREAK,current_date = downloadOrSkip(url,category)
-                        if shouldAccelerate(current_date): #hacky, fix later.
-                            break
-                    else:
+            articles = getArticleDivsOnPage(nextPage_URL)
+            article_URLS = stripURLSFromAllArticles(BASE_LINK,articles)
+            
+            for url in article_URLS:
+                if not BREAK:
+                    if len(articles) == 0: #no articles found
+                        BREAK = True
+                        continue
+                    BREAK,current_date = downloadOrSkip(url,category)
+                    if shouldAccelerate(current_date): #hacky, fix later.
                         break
-                LAST_URL = nextPage_URL
-                nextPage_URL = getNextPageURL_Accelerate(nextPage_URL,current_date)
-                pageNum = getPageNumberFromURL(nextPage_URL)
-        except Exception as e:
-            lst.append(LAST_URL)
-            time.sleep(30)
-            print(e)
+                else:
+                    break
+            nextPage_URL = getNextPageURL_Accelerate(nextPage_URL,current_date)
+            pageNum = getPageNumberFromURL(nextPage_URL)
     print('Scraping complete!')
     return
     

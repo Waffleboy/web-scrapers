@@ -49,7 +49,7 @@ def addToCSV(infoHash,CSV_NAME,articleID,category):
         paragraphNumber = 1
         
         for p_tag in content:
-            paragraph = str(p_tag) # with the <p> tag, else use .text instead
+            paragraph = str(p_tag)
             rows.append([articleID,paragraphNumber,date,author1,author2,title,paragraph,
                          category])
             paragraphNumber += 1

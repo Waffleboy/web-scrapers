@@ -7,8 +7,6 @@ Created on Wed Aug 31 08:15:42 2016
 
 from bs4 import BeautifulSoup
 import requests, string,time,pickle,os,csv,re
-import pandas as pd
-from unidecode import unidecode
 from fake_useragent import UserAgent
 # This file will scrape a single URL.
 
@@ -75,6 +73,7 @@ def getContent_PTags(link,soup):
          print('Using first one found...')
     content = content[0]
     tags = content.findAll('p')
+    tags = [str(x) for x in tags]
     return tags
     
 def getContent_TextOnly(link,soup):
