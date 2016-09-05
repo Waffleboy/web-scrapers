@@ -43,7 +43,7 @@ CATEGORIES_TO_SCRAPE = {#'commentary'     :'http://www.todayonline.com/commentar
 ## DO NOT TOUCH THE FOLLOWING ##
 http.client._MAXHEADERS = 1000
 BASE_LINK = 'http://www.todayonline.com'
-
+LAST_URL = ''
 #==============================================================================
 def initialize():
     print('Creating folders..')
@@ -82,9 +82,8 @@ def downloadOrSkip(URL,category):
         raise Exception("Error in making date_object for "+URL)
     if date_object >= DATE_FROM and date_object <= DATE_END:
         infoHash = backend.run(URL)
-        save = storeHTML(URL,infoHash['date'],infoHash['title'],category)
-        if save:
-            formatter.formatInputsToCSV(infoHash,CSV_NAME,category)
+        storeHTML(URL,infoHash['date'],infoHash['title'],category)
+        formatter.formatInputsToCSV(infoHash,CSV_NAME,category)
     elif date_object > DATE_END:
         pass
     elif date_object < DATE_FROM:
@@ -312,39 +311,45 @@ def downloadAllArticles(articles,article_URLS,category,BREAK):
 def run():
     global DATE_FROM,DATE_END,BASE_LINK,CATEGORIES_TO_SCRAPE,PRINT_PAGE_NUM,RESUME_FROM_PREVIOUS,RESUME_CATEGORY
     #initializeOrResume(RESUME_FROM_PREVIOUS)
+    lst=[]
     OVERRIDE = True
     for category in CATEGORIES_TO_SCRAPE:
         print('Scraping category: ' + category)
         BREAK = False
         if OVERRIDE:
-            nextPage_URL = 'http://www.todayonline.com/world?page=6118'
+            nextPage_URL = 'http://www.todayonline.com/world?page=6150'
             OVERRIDE = False
         else:
             category_URL = CATEGORIES_TO_SCRAPE[category]
             nextPage_URL = quickSearchStarting(category_URL)
             
         pageNum = getPageNumberFromURL(nextPage_URL)
-        while (BREAK == False and nextPage_URL):
-            if PRINT_PAGE_NUM:
-                print('Investigating and Scraping page '+ str(pageNum) + ' of category '+category + '...')
+        try:
+            while (BREAK == False and nextPage_URL):
+                if PRINT_PAGE_NUM:
+                    print('Investigating and Scraping page '+ str(pageNum) + ' of category '+category + '...')
+                    
+                articles = getArticleDivsOnPage(nextPage_URL)
+                article_URLS = stripURLSFromAllArticles(BASE_LINK,articles)
                 
-            articles = getArticleDivsOnPage(nextPage_URL)
-            article_URLS = stripURLSFromAllArticles(BASE_LINK,articles)
-            
-            for url in article_URLS: 
-                #print(url)
-                if not BREAK:
-                    if len(articles) == 0: #no articles found
-                        BREAK = True
-                        continue
-                    BREAK,current_date = downloadOrSkip(url,category)
-                    if shouldAccelerate(current_date): #hacky, fix later.
+                for url in article_URLS: 
+                    #print(url)
+                    if not BREAK:
+                        if len(articles) == 0: #no articles found
+                            BREAK = True
+                            continue
+                        BREAK,current_date = downloadOrSkip(url,category)
+                        if shouldAccelerate(current_date): #hacky, fix later.
+                            break
+                    else:
                         break
-                else:
-                    break
-            
-            nextPage_URL = getNextPageURL_Accelerate(nextPage_URL,current_date)
-            pageNum = getPageNumberFromURL(nextPage_URL)
+                LAST_URL = nextPage_URL
+                nextPage_URL = getNextPageURL_Accelerate(nextPage_URL,current_date)
+                pageNum = getPageNumberFromURL(nextPage_URL)
+        except Exception as e:
+            lst.append(LAST_URL)
+            time.sleep(30)
+            print(e)
     print('Scraping complete!')
     return
     
