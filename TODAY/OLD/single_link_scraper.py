@@ -6,7 +6,7 @@ Created on Wed Aug 31 08:15:42 2016
 """
 
 from bs4 import BeautifulSoup
-import requests,re
+import requests, string,time,pickle,os,csv,re
 from fake_useragent import UserAgent
 # This file will scrape a single URL.
 
@@ -53,7 +53,7 @@ def getAuthorEmail(link,soup):
         return emails[0].text
     
 def getDatePublished(link,soup):
-    dates = soup.findAll("div",{"class":["full-date"]})
+    dates = soup.findAll("div",{"class":["authoring","full-date"]})
     if dates:
         return dates[0].findAll("span")[1].text
     print("WARNING: No date for "+link)
